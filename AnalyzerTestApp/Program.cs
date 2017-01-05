@@ -17,27 +17,26 @@ namespace AnalyzerTestApp
                 var rewriter = new AutoMapperRewriter(model);
                 var newSource = rewriter.Visit(sourceTree.GetRoot());
 
-                //SyntaxFactory.CompilationUnit()
-                //    .AddMembers()
-
                 if (newSource == sourceTree.GetRoot())
                 {
                     continue;
                 }
 
-                //var ignoreAllNonExistingFinder = new IgnoreAllNonExistingFinder(model);
-                //ignoreAllNonExistingFinder.Visit(newSource);
+                var ignoreAllNonExistingFinder = new IgnoreAllNonExistingFinder(model);
+                ignoreAllNonExistingFinder.Visit(newSource);
 
-                //if (ignoreAllNonExistingFinder.ToBeRemoved.Any())
-                //{
-                //    newSource = newSource.RemoveNodes(ignoreAllNonExistingFinder.ToBeRemoved, SyntaxRemoveOptions.KeepNoTrivia);
+                if (ignoreAllNonExistingFinder.ToBeRemoved.Any())
+                {
+                    newSource = newSource.RemoveNodes(ignoreAllNonExistingFinder.ToBeRemoved, SyntaxRemoveOptions.KeepNoTrivia);
 
-                //    //foreach (var node in ignoreAllNonExistingFinder.ToBeRemoved)
-                //    //{
-                //    //    var newNode = newSource.FindNode(node.FullSpan);
-                //    //    newSource = newSource.RemoveNode(newNode, SyntaxRemoveOptions.KeepNoTrivia);
-                //    //}
-                //}
+                    //foreach (var node in ignoreAllNonExistingFinder.ToBeRemoved)
+                    //{
+                    //    var newNode = newSource.FindNode(node.FullSpan);
+                    //    newSource = newSource.RemoveNode(newNode, SyntaxRemoveOptions.KeepNoTrivia);
+                    //}
+                }
+
+                // TODO: Keep file encoding when saving
 
                 var extension = Path.GetExtension(sourceTree.FilePath);
                 var fileName = sourceTree.FilePath.Substring(0, sourceTree.FilePath.Length - extension.Length);
