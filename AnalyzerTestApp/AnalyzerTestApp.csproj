@@ -96,6 +96,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoMapperRewritter.cs" />
+    <Compile Include="ExpressionRewriter.cs" />
+    <Compile Include="MappingConfigurationGenerator.cs" />
+    <Compile Include="MappingDefinitionParser.cs" />
+    <Compile Include="MappingExpressionParser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TypeInferenceRewriter.cs" />

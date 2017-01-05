@@ -1,88 +1,104 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace AnalyzerTestApp
 {
-    internal class AutoMapperRewritter : CSharpSyntaxRewriter
+    internal class AutoMapperRewriter : CSharpSyntaxRewriter
     {
+        private const int TabSize = 4;
         private readonly SemanticModel _semanticModel;
+        private readonly IDictionary<Tuple<ITypeSymbol, ITypeSymbol>, IList<IPropertySymbol>> _mapping;
 
-        public AutoMapperRewritter(SemanticModel model)
+        public AutoMapperRewriter(SemanticModel model)
         {
             _semanticModel = model;
+            _mapping = new Dictionary<Tuple<ITypeSymbol, ITypeSymbol>, IList<IPropertySymbol>>();
         }
 
         public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
         {
-            var symbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
+            var methodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
 
             // symbol could be null, e.g. when invoking a delegate
-            if (symbol == null)
+            if (methodSymbol == null)
             {
                 return base.VisitInvocationExpression(node);
             }
 
-            // symbol must be called Build and have 0 parameters
-            if (symbol.Name != "CreateMap" || symbol.Parameters.Length != 0)
+            var type = methodSymbol.ContainingType;
+
+            if (type.ContainingSymbol.Name != "AutoMapper")
             {
                 return base.VisitInvocationExpression(node);
             }
 
-            // TODO you might want to check that the parent is not an invocation of .WithOption("addnewline") already
-
-            var type = symbol.ContainingType;
-
-            // symbol must be a method on the type "Mapper.CreateMap"
-            if (type.Name != nameof(AutoMapper.Mapper) || type.ContainingSymbol.Name != "AutoMapper")
+            // Symbol is a `CreateMap` invocation
+            if (MappingDefinitionParser.IsMappingDefinition(methodSymbol, type))
             {
-                return base.VisitInvocationExpression(node);
+                var mappingDefinitionParser = new MappingDefinitionParser(methodSymbol);
+                var mappedTypes = mappingDefinitionParser.GetMappedTypes();
+
+                var sourceMembers = mappingDefinitionParser.GetSourceMembers();
+                var destinationMembers = mappingDefinitionParser.GetDestinationMembers();
+                var mappedProperties = _mapping[mappedTypes];
+
+                var implicitlyMappedProperties = GetImplictlyMappedProperties(destinationMembers, sourceMembers, mappedProperties);
+
+                var newNode = node;
+                var trivia = GetTrivia(node);
+
+                foreach (var implicitlyMappedProperty in implicitlyMappedProperties)
+                {
+                    var mappingConfigurationGenerator = new MappingConfigurationGenerator(newNode, implicitlyMappedProperty, trivia);
+                    newNode = mappingConfigurationGenerator.GetGeneratedNewNode();
+                }
+
+                // The last mapping expression needs to end with newline
+                return newNode.WithTrailingTrivia(SyntaxFactory.TriviaList(SyntaxFactory.CarriageReturnLineFeed));
             }
 
-            var sourceMembers = GetSourceMembers(symbol);
-            var destinationMembers = GetDestinationMembers(symbol);
+            if (MappingExpressionParser.IsMappingExpression(methodSymbol, type))
+            {
+                var mappingExpressionParser = new MappingExpressionParser(node, _semanticModel, methodSymbol);
 
-            return null;
+                var mappedTypes = mappingExpressionParser.GetMappedTypes();
 
-            //// TODO you may want to add a check that the containing symbol is a namespace, and that its containing namespace is the global namespace
+                var destinationProperty = mappingExpressionParser.GetDestinationProperty();
+                if (!_mapping.ContainsKey(mappedTypes))
+                {
+                    _mapping[mappedTypes] = new List<IPropertySymbol>(new[] { destinationProperty });
+                }
+                else
+                {
+                    _mapping[mappedTypes].Add(destinationProperty);
+                }
+            }
 
-            //// we have the right one, so return the syntax we want
-
-            //var memberAccessExpression = SyntaxFactory.MemberAccessExpression(
-            //            SyntaxKind.SimpleMemberAccessExpression,
-            //            node,
-            //            SyntaxFactory.IdentifierName("WithOption"));
-
-            //var addNewline = SyntaxFactory.Literal("addnewline");
-
-            //var literalExpression = SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, addNewline);
-
-            //var argumentList = SyntaxFactory.ArgumentList(
-            //            SyntaxFactory.SingletonSeparatedList(
-            //                SyntaxFactory.Argument(literalExpression)));
-
-            //return
-            //    SyntaxFactory.InvocationExpression(memberAccessExpression, argumentList);
+            return base.VisitInvocationExpression(node);
         }
 
-        private IList<IPropertySymbol> GetSourceMembers(IMethodSymbol methodSymbol)
+        private SyntaxTriviaList GetTrivia(InvocationExpressionSyntax node)
         {
-            return GetMembersFromArgumentType(methodSymbol, 0);
+            var newIdentTrivia = SyntaxFactory.TriviaList(Enumerable.Repeat(SyntaxFactory.Space, TabSize));
+            var leadingTrivia = node.GetLeadingTrivia();
+            leadingTrivia = leadingTrivia.InsertRange(0, newIdentTrivia);
+            return leadingTrivia.Insert(0, SyntaxFactory.CarriageReturnLineFeed);
         }
 
-        private IList<IPropertySymbol> GetDestinationMembers(IMethodSymbol methodSymbol)
+        private IList<string> GetImplictlyMappedProperties(
+            IList<IPropertySymbol> allDestinationProperties,
+            IList<IPropertySymbol> allSourceProperties,
+            IList<IPropertySymbol> mappedProperties)
         {
-            return GetMembersFromArgumentType(methodSymbol, 1);
-        }
+            var stringSourceProperties = allSourceProperties.Select(x => x.Name);
+            var commonProperties = allDestinationProperties.Where(p => stringSourceProperties.Contains(p.Name));
 
-        private IList<IPropertySymbol> GetMembersFromArgumentType(IMethodSymbol methodSymbol, int argumentIndex)
-        {
-            var namedSourceType = methodSymbol.TypeArguments[argumentIndex];
-            var members = namedSourceType.GetMembers().OfType<IPropertySymbol>().ToList();
-
-            return members;
+            return commonProperties.Select(p => p.Name)
+                    .Except(mappedProperties.Select(p => p.Name)).ToList();
         }
     }
 }

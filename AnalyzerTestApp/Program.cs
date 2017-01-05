@@ -5,23 +5,28 @@ using System.Linq;
 
 namespace AnalyzerTestApp
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main()
         {
-            Compilation test = CreateTestCompilation();
+            var compilation = CreateTestCompilation();
 
-            foreach (SyntaxTree sourceTree in test.SyntaxTrees.Where(st => st.FilePath.EndsWith("Mapper.cs")))
+            foreach (var sourceTree in compilation.SyntaxTrees.Where(st => st.FilePath.EndsWith("Mapper.cs")))
             {
-                SemanticModel model = test.GetSemanticModel(sourceTree);
-                AutoMapperRewritter rewriter = new AutoMapperRewritter(model);
+                var model = compilation.GetSemanticModel(sourceTree);
+                var rewriter = new AutoMapperRewriter(model);
 
-                SyntaxNode newSource = rewriter.Visit(sourceTree.GetRoot());
+                var newSource = rewriter.Visit(sourceTree.GetRoot());
 
-                if (newSource != sourceTree.GetRoot())
+                if (newSource == sourceTree.GetRoot())
                 {
-                    File.WriteAllText(sourceTree.FilePath, newSource.ToFullString());
+                    continue;
                 }
+
+                var extension = Path.GetExtension(sourceTree.FilePath);
+                var fileName = sourceTree.FilePath.Substring(0, sourceTree.FilePath.Length - extension.Length);
+
+                File.WriteAllText(fileName + "_rewritten" + extension, newSource.ToFullString());
             }
         }
 

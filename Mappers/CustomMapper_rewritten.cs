@@ -25,10 +25,16 @@ namespace AnalyzerTestApp
         protected void Configure()
         {
             Mapper.CreateMap<Foo, Bar>()
+                .ForMember(dest => dest.Age, opt => opt.MapFrom(ori => ori.Age))
+                .ForMember(dest => dest.CPF, opt => opt.MapFrom(ori => ori.CPF))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.Surname, opt => opt.MapFrom(src => src.LastName));
 
             Mapper.CreateMap<Bar, Foo>()
+    
+            .ForMember(dest => dest.Age, opt => opt.MapFrom(ori => ori.Age))
+    
+            .ForMember(dest => dest.CPF, opt => opt.MapFrom(ori => ori.CPF))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.Surname));
         }
