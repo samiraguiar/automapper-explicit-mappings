@@ -80,7 +80,8 @@ namespace AnalyzerTestApp
 
                 var sourceMembers = mappingDefinitionParser.GetSourceMembers();
                 var destinationMembers = mappingDefinitionParser.GetDestinationMembers();
-                var mappedProperties = _mapping[mappedTypes];
+
+                var mappedProperties = _mapping.ContainsKey(mappedTypes) ? _mapping[mappedTypes] : new List<IPropertySymbol>();
 
                 var implicitlyMappedProperties = GetImplictlyMappedProperties(destinationMembers, sourceMembers, mappedProperties);
 
