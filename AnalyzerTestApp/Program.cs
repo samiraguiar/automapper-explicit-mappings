@@ -22,20 +22,6 @@ namespace AnalyzerTestApp
                     continue;
                 }
 
-                var ignoreAllNonExistingFinder = new IgnoreAllNonExistingFinder(model);
-                ignoreAllNonExistingFinder.Visit(newSource);
-
-                if (ignoreAllNonExistingFinder.ToBeRemoved.Any())
-                {
-                    newSource = newSource.RemoveNodes(ignoreAllNonExistingFinder.ToBeRemoved, SyntaxRemoveOptions.KeepNoTrivia);
-
-                    //foreach (var node in ignoreAllNonExistingFinder.ToBeRemoved)
-                    //{
-                    //    var newNode = newSource.FindNode(node.FullSpan);
-                    //    newSource = newSource.RemoveNode(newNode, SyntaxRemoveOptions.KeepNoTrivia);
-                    //}
-                }
-
                 // TODO: Keep file encoding when saving
 
                 var extension = Path.GetExtension(sourceTree.FilePath);

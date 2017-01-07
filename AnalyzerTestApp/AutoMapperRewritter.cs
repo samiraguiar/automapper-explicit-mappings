@@ -7,38 +7,6 @@ using System.Linq;
 
 namespace AnalyzerTestApp
 {
-    internal class IgnoreAllNonExistingFinder : CSharpSyntaxRewriter
-    {
-        public IList<SyntaxNode> ToBeRemoved = new List<SyntaxNode>();
-        private readonly SemanticModel _semanticModel;
-
-        public IgnoreAllNonExistingFinder(SemanticModel model)
-        {
-            _semanticModel = model;
-        }
-
-        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
-        {
-            var methodSymbol = _semanticModel.GetSymbolInfo(node).Symbol as IMethodSymbol;
-
-            // symbol could be null, e.g. when invoking a delegate
-            if (methodSymbol == null)
-            {
-                return base.VisitInvocationExpression(node);
-            }
-
-            var type = methodSymbol.ContainingType;
-
-            if (methodSymbol.Name == "IgnoreAllNonExisting" && type.Name == "MappingExpressionExtensions")
-            {
-                ToBeRemoved.Add(node);
-                return base.VisitInvocationExpression(node);
-            }
-
-            return base.VisitInvocationExpression(node);
-        }
-    }
-
     internal class AutoMapperRewriter : CSharpSyntaxRewriter
     {
         private const int TabSize = 4;
@@ -46,8 +14,6 @@ namespace AnalyzerTestApp
             SyntaxFactory.TriviaList(Enumerable.Repeat(SyntaxFactory.Space, TabSize));
         private readonly SemanticModel _semanticModel;
         private readonly IDictionary<Tuple<ITypeSymbol, ITypeSymbol>, IList<IPropertySymbol>> _mapping;
-
-        public IList<SyntaxNode> ToBeRemoved = new List<SyntaxNode>();
 
         public AutoMapperRewriter(SemanticModel model)
         {
@@ -66,6 +32,15 @@ namespace AnalyzerTestApp
             }
 
             var type = methodSymbol.ContainingType;
+
+            if (methodSymbol.Name == "IgnoreAllNonExisting" && type.Name == "MappingExpressionExtensions")
+            {
+                var child = node.DescendantNodes().FirstOrDefault(n => n.IsKind(SyntaxKind.InvocationExpression));
+
+                var newChild = Visit(child);
+
+                return newChild.WithoutTrailingTrivia();
+            }
 
             if (type.ContainingSymbol.Name != "AutoMapper")
             {
