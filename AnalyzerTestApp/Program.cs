@@ -22,10 +22,7 @@ namespace AnalyzerTestApp
                     continue;
                 }
 
-                var extension = Path.GetExtension(sourceTree.FilePath);
-                var fileName = sourceTree.FilePath.Substring(0, sourceTree.FilePath.Length - extension.Length);
-
-                File.WriteAllText(fileName + "_rewritten" + extension, newSource.ToFullString(), sourceTree.Encoding);
+                File.WriteAllText(sourceTree.FilePath, newSource.ToFullString(), sourceTree.Encoding);
             }
         }
 

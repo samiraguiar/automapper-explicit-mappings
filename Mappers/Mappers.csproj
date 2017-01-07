@@ -46,7 +46,7 @@
   <ItemGroup>
     <Compile Include="CustomMapper.cs" />
     <Compile Include="MappingExpressionExtensions.cs" />
-    <Compile Include="SampleUsage.cs" />
+    <Compile Include="FluentSampleUsage.cs" />
     <Compile Include="FluentSample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
