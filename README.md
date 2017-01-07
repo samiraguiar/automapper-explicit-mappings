@@ -5,11 +5,11 @@ AutoMapper has a built-in test to make sure that all properties, usually from th
 Many projects misuse AutoMapper and use a famous extension method that automatically ignores all unmapped properties to make that test pass.
 It's also common for them to take advantage of AutoMapper's ability to auto mapping (no pun intended) properties with the same name and leave them out of the mapping convention.
 
-Those two common actions make it harder to spot errors and to refactor code. For instance, when renaming a property R# won't know whether it was mapped implictly or ignored by AutoMapper.
+Those two common actions make it harder to spot errors and to refactor code. For instance, when renaming a property R# won't know whether it was mapped implictly or ignored (via `IgnoreAllNonExisting`) by AutoMapper.
 
 This code attempts to fix this situation by doing three things:
 - It explicitly maps all properties with the same name in both source and destination;
-- It explicitly ignores all properties that are present in the destination but not in the source. This is basically what `IgnoreAllNonExisting` does under the covers.
+- It explicitly ignores all properties that are present in the destination but not in the source. This is basically what `IgnoreAllNonExisting` does under the covers;
 - It removes all the `IgnoreAllNonExisting` calls.
 
 With those steps taken, it becomes easier to refactor code and perhaps even remove AutoMapper. The `AssertConfigurationIsValid` should correctly work afterwards.
@@ -46,4 +46,6 @@ Some of the caveats with this approach are:
 
 ...
 
-Nevertheless, hopefully this may help someone to get started in refactoring AutoMapper's mapping configurations or removing them altogether.
+Nevertheless, hopefully this may help someone to get started with refactoring AutoMapper's mapping configurations or removing them altogether.
+
+**Note:** this repository has a copy of the aforementioned `IgnoreAllNonExisting` method. No credit was given as the original source was not found, but the credits will be added if the author so desires. 
