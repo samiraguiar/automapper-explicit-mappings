@@ -29,7 +29,7 @@ namespace AnalyzerTestApp
         private static Compilation CreateTestCompilation()
         {
             var msWorkspace = MSBuildWorkspace.Create();
-            var project = msWorkspace.OpenProjectAsync(@"C:\Users\Samir.MAC\Documents\Workspace\AnalyzerTestApp\Mappers\Mappers.csproj").Result;
+            var project = msWorkspace.OpenProjectAsync(@"..\..\..\Mappers\Mappers.csproj").Result;
             return project.GetCompilationAsync().Result;
         }
     }
