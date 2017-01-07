@@ -41,7 +41,14 @@ namespace AnalyzerTestApp
             var namedSourceType = _methodSymbol.TypeArguments[argumentIndex];
             var members = namedSourceType.GetMembers().OfType<IPropertySymbol>().ToList();
 
-            return members;
+            var baseType = namedSourceType.BaseType;
+            while (baseType != null)
+            {
+                members.AddRange(baseType.GetMembers().OfType<IPropertySymbol>());
+                baseType = baseType.BaseType;
+            }
+
+            return members.Distinct().ToList();
         }
     }
 }
