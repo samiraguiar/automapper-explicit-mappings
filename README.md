@@ -42,10 +42,10 @@ Mapper.CreateMap<Foo, Bar>()
 Some of the caveats with this approach are:
 - It always expects the mappings to be written in fluent style and in the same statement;
 - It expects the `IgnoreAllNonExisting` calls to be at the end of the statement;
-- It doesn't cover `.ForAllMembers` and the other `IMappingExpression` methods;
+- It doesn't cover `.ForAllMembers` and other `IMappingExpression` methods;
 
 ...
 
 Nevertheless, hopefully this may help someone to get started with refactoring AutoMapper's mapping configurations or removing them altogether.
 
-**Note:** this repository has a copy of the aforementioned `IgnoreAllNonExisting` method. No credit was given as the original source was not found, but the credits will be added if the author so desires. 
+**Note:** this repository has a copy of the aforementioned `IgnoreAllNonExisting` method. No credit was given as the original source was not found, but it will be promptly added if the author so desires. 
