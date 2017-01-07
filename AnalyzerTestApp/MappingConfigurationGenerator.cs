@@ -29,10 +29,43 @@ namespace AnalyzerTestApp
             _trailingTrivia = trailingTrivia;
         }
 
-        public InvocationExpressionSyntax GetGeneratedNewNode()
+        public InvocationExpressionSyntax GetIgnoreInvocation()
         {
             var destinationLambda = GetLambda(DestinationParameterName, _mappedMemberName);
+
+            // gen: `{_optionsParameterName}`
+            var parameter = SyntaxFactory.Parameter(
+                                SyntaxFactory.Identifier(
+                                    SyntaxFactory.TriviaList(),
+                                    OptionsParameterName,
+                                    SyntaxFactory.TriviaList())
+                            );
+
+            // gen: `{_optionsParameterName}.Ignore()`
+            var invocationExpression = SyntaxFactory.InvocationExpression(
+                                          SyntaxFactory.MemberAccessExpression(
+                                              SyntaxKind.SimpleMemberAccessExpression,
+                                              SyntaxFactory.IdentifierName(OptionsParameterName),
+                                              SyntaxFactory.IdentifierName("Ignore")
+                                          )
+                                       );
+
+            // gen: `{_optionsParameterName} => {_optionsParameterName}.MapFrom({_sourceParameterName} => {_sourceParameterName}.{_mappedMemberName})`
+            var ignoreLambda = SyntaxFactory.SimpleLambdaExpression(parameter, invocationExpression)
+                                            .WithArrowToken(ArrowToken);
+
+            return GetForMemberInvocation(ignoreLambda);
+        }
+
+        public InvocationExpressionSyntax GetMappingInvocation()
+        {
             var sourceLambda = GetOptionsLambda();
+            return GetForMemberInvocation(sourceLambda);
+        }
+
+        public InvocationExpressionSyntax GetForMemberInvocation(SimpleLambdaExpressionSyntax sourceLambda)
+        {
+            var destinationLambda = GetLambda(DestinationParameterName, _mappedMemberName);
 
             var invocationExpression = SyntaxFactory.InvocationExpression(
                                           SyntaxFactory.MemberAccessExpression(
@@ -86,6 +119,14 @@ namespace AnalyzerTestApp
 
         private SimpleLambdaExpressionSyntax GetOptionsLambda()
         {
+            // gen: `{_sourceParameterName} => {_sourceParameterName}.{_mappedMemberName}`
+            var sourceLambda = GetLambda(SourceParameterName, _mappedMemberName);
+            var sourceLambdaAsArgument = SyntaxFactory.ArgumentList(
+                                             SyntaxFactory.SingletonSeparatedList(
+                                                SyntaxFactory.Argument(sourceLambda)
+                                             )
+                                         );
+
             // gen: `{_optionsParameterName}`
             var parameter = SyntaxFactory.Parameter(
                                 SyntaxFactory.Identifier(
@@ -102,15 +143,6 @@ namespace AnalyzerTestApp
                                               SyntaxFactory.IdentifierName("MapFrom")
                                           )
                                        );
-
-            // gen: `{_sourceParameterName} => {_sourceParameterName}.{_mappedMemberName}`
-            var sourceLambda = GetLambda(SourceParameterName, _mappedMemberName);
-
-            var sourceLambdaAsArgument = SyntaxFactory.ArgumentList(
-                                             SyntaxFactory.SingletonSeparatedList(
-                                                SyntaxFactory.Argument(sourceLambda)
-                                             )
-                                         );
 
             // gen: `{_optionsParameterName}.MapFrom({_sourceParameterName} => {_sourceParameterName}.{_mappedMemberName})`
             invocationExpression = invocationExpression.WithArgumentList(sourceLambdaAsArgument);

@@ -59,6 +59,7 @@ namespace AnalyzerTestApp
                 var mappedProperties = _mapping.ContainsKey(mappedTypes) ? _mapping[mappedTypes] : new List<IPropertySymbol>();
 
                 var implicitlyMappedProperties = GetImplictlyMappedProperties(destinationMembers, sourceMembers, mappedProperties);
+                var ignoredProperties = GetIgnoredProperties(destinationMembers, sourceMembers, mappedProperties);
 
                 var newNode = node;
                 var trivia = GetTrivia(node);
@@ -66,7 +67,13 @@ namespace AnalyzerTestApp
                 foreach (var implicitlyMappedProperty in implicitlyMappedProperties)
                 {
                     var mappingConfigurationGenerator = new MappingConfigurationGenerator(newNode, implicitlyMappedProperty, trivia);
-                    newNode = mappingConfigurationGenerator.GetGeneratedNewNode();
+                    newNode = mappingConfigurationGenerator.GetMappingInvocation();
+                }
+
+                foreach (var ignoredProperty in ignoredProperties)
+                {
+                    var mappingConfigurationGenerator = new MappingConfigurationGenerator(newNode, ignoredProperty, trivia);
+                    newNode = mappingConfigurationGenerator.GetIgnoreInvocation();
                 }
 
                 // The last mapping expression needs to end with newline
@@ -110,6 +117,18 @@ namespace AnalyzerTestApp
             var commonProperties = allDestinationProperties.Where(p => stringSourceProperties.Contains(p.Name));
 
             return commonProperties.Select(p => p.Name)
+                    .Except(mappedProperties.Select(p => p.Name)).ToList();
+        }
+
+        private IList<string> GetIgnoredProperties(
+            IList<IPropertySymbol> allDestinationProperties,
+            IList<IPropertySymbol> allSourceProperties,
+            IList<IPropertySymbol> mappedProperties)
+        {
+            var sourcePropertiesNames = allSourceProperties.Select(x => x.Name);
+            var onlyOnDestination = allDestinationProperties.Where(x => !sourcePropertiesNames.Contains(x.Name));
+
+            return onlyOnDestination.Select(p => p.Name)
                     .Except(mappedProperties.Select(p => p.Name)).ToList();
         }
     }
